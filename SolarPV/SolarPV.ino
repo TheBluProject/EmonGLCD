@@ -68,6 +68,9 @@ PayloadTX emontx;
 typedef struct { int temperature; } PayloadGLCD;
 PayloadGLCD emonglcd;
 
+typedef struct { int hour, mins, sec; } PayloadBase;			// new payload def for time data reception
+PayloadBase emonbase; 
+
 //---------------------------------------------------
 // emonGLCD SETUP
 //---------------------------------------------------
@@ -149,8 +152,9 @@ void loop()
       
       if (node_id == 15)
       {
-        RTC.adjust(DateTime(2012, 1, 1, rf12_data[1], rf12_data[2], rf12_data[3]));
-        last_emonbase = millis();
+       emonbase = *(PayloadBase*) rf12_data;                           
+       RTC.adjust(DateTime(2012, 1, 1, emonbase.hour, emonbase.mins, emonbase.sec));
+       last_emonbase = millis(); 
       } 
     }
   }
@@ -230,7 +234,9 @@ void loop()
     int LDR = analogRead(LDRpin);                     // Read the LDR Value so we can work out the light level in the room.
     int LDRbacklight = map(LDR, 0, 1023, 50, 250);    // Map the data from the LDR from 0-1023 (Max seen 1000) to var GLCDbrightness min/max
     LDRbacklight = constrain(LDRbacklight, 0, 255);   // Constrain the value to make sure its a PWM value 0-255
-    if ((hour > 22) ||  (hour < 5)) glcd.backLight(0); else glcd.backLight(LDRbacklight);  
+    // if ((hour > 22) ||  (hour < 5)) glcd.backLight(0); else // We want the backlight constantly on
+    
+    glcd.backLight(LDRbacklight);  
 
     int PWRleds= map(cval_use-cval_gen, 0, maxgen, 0, 255);     // Map importing value from (LED brightness - cval3 is the smoothed grid value - see display above 
     if (PWRleds<0) PWRleds = PWRleds*-1;                        // keep it positive 
