@@ -21,6 +21,8 @@ OneWire library: http://www.pjrc.com/teensy/td_libs_OneWire.html
 
 * **HomeEnergyMonitor_Old:** an old version that is not based on the templates implementation
 
+* **HEMFunky:** Home Energy Monitor plus Funky DHT22 Temp/Humidity - Template based, multiple displays (SolarPV based)
+
 * **SolarPV:** Solar PV monitoring example (http://openenergymonitor.org/emon/applications/solarpv) for displaying data from 2CT solar PV monitoring emonTx (type 1 and 2 - see comments in sketch). Posts room temperature online to emoncms via emonBase/NanodeRF. Also gets current time for interent via NanodeRF. 
 
 * **SolarPV_Old:** an old version that is not based on the templates implementation
