@@ -189,16 +189,17 @@ void draw_dash_page(double use, double usekwh, double humi, double otemp, double
     else glcd.drawString(67,34,PSTR("baseFail"));
     
   }
-  //Batt from emonx [quickndirty]
-  dtostrf(batt,0,0,str); 
+  //EmonTX batt
+  dtostrf(batt,0,0,str);
+  glcd.drawString_P(0,0,PSTR("Batt "));
   strcat(str,"mV");
-  glcd.drawString(0,0,str);
+  glcd.drawString(19,0,str);
   
-   //Dewpoint [quickndirty]
+   //Dewpoint 
   dtostrf(dewpoint,0,1,str);
- // strcat("DewPoint",str); 
   strcat(str,"c");
-  glcd.drawString(0,34,str);
+  glcd.drawString_P(0,34,PSTR("DewPT "));
+  glcd.drawString(23,34,str);
   
   //big bold font
   glcd.setFont(font_helvB14);

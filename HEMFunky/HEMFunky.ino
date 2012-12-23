@@ -86,7 +86,7 @@ const int switch3=19;
 //---------------------------------------------------
 int hour = 0, minute = 0;
 double usekwh = 0;
-double otemp = 6.7, humi = 87.5, dewpoint = 0;
+double otemp = 11.7, humi = 82.5, dewpoint = 0;
 double minotemp, maxotemp, minhumi, maxhumi, batt, dpcalc;
 double use_history[7];
 int cval_use;
@@ -192,7 +192,7 @@ void loop()
 
     if (page==1)
     {            
-      draw_dash_page(cval_use, usekwh, humi, otemp, minotemp, maxotemp,dewpoint, temp, mintemp, maxtemp, hour,minute, batt, last_emontx, last_emonbase);
+      draw_dash_page(cval_use, usekwh, humi, otemp, minotemp, maxotemp, dewpoint, temp, mintemp, maxtemp, hour, minute, batt, last_emontx, last_emonbase);
       glcd.refresh();
     }
     else if (page==2)
