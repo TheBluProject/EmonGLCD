@@ -38,6 +38,7 @@
 #include <JeeLib.h>
 #include <GLCD_ST7565.h>
 #include <avr/pgmspace.h>
+#include <math.h>
 GLCD_ST7565 glcd;
 
 #include <OneWire.h>		    // http://www.pjrc.com/teensy/td_libs_OneWire.html
@@ -85,8 +86,8 @@ const int switch3=19;
 //---------------------------------------------------
 int hour = 0, minute = 0;
 double usekwh = 0;
-double otemp = 0, humi = 0;
-double minotemp, maxotemp, minhumi, maxhumi, batt;
+double otemp = 6.7, humi = 87.5, dewpoint = 0;
+double minotemp, maxotemp, minhumi, maxhumi, batt, dpcalc;
 double use_history[7];
 int cval_use;
 byte page = 1;
@@ -184,10 +185,14 @@ void loop()
     last_switch_state = switch_state;
     switch_state = digitalRead(switch1);  
     if (!last_switch_state && switch_state) { page += 1; if (page>4) page = 1; }
+    
+    //Dew point calculation
+    dpcalc = (log10(humi)-2.0)/0.4343+(17.62*otemp)/(243.12+otemp);
+    dewpoint = 243.12*dpcalc/(17.62-dpcalc);
 
     if (page==1)
     {            
-      draw_dash_page(cval_use, usekwh, humi, otemp, minotemp, maxotemp, temp, mintemp, maxtemp, hour,minute, last_emontx, last_emonbase);
+      draw_dash_page(cval_use, usekwh, humi, otemp, minotemp, maxotemp,dewpoint, temp, mintemp, maxtemp, hour,minute, batt, last_emontx, last_emonbase);
       glcd.refresh();
     }
     else if (page==2)
@@ -226,8 +231,8 @@ void loop()
     if (temp > maxtemp) maxtemp = temp;
     if (temp < mintemp) mintemp = temp;
     
-    otemp = emonfunky.temperature / 100;
-    humi = emonfunky.humidity / 100;
+//    otemp = emonfunky.temperature / 100;
+//    humi = emonfunky.humidity / 100;
     if (otemp > maxotemp) maxotemp = otemp;
     if (otemp < minotemp) minotemp = otemp;
     

@@ -142,7 +142,7 @@ void draw_outdoor_page(char* otempstr, double otemp, double minotemp, double max
 //------------------------------------------------------------------
 // Draws the Dasboard page
 //------------------------------------------------------------------
-void draw_dash_page(double use, double usekwh, double humi, double otemp, double minotemp,double maxotemp, double temp, double mintemp, double maxtemp, double hour, double minute, unsigned long last_emontx, unsigned long last_emonbase)
+void draw_dash_page(double use, double usekwh, double humi, double otemp, double minotemp,double maxotemp, double dewpoint, double temp, double mintemp, double maxtemp, double hour, double minute, double batt, unsigned long last_emontx, unsigned long last_emonbase)
 {
   
   int MINTEMP = -15;
@@ -193,6 +193,12 @@ void draw_dash_page(double use, double usekwh, double humi, double otemp, double
   dtostrf(batt,0,0,str); 
   strcat(str,"mV");
   glcd.drawString(0,0,str);
+  
+   //Dewpoint [quickndirty]
+  dtostrf(dewpoint,0,1,str);
+ // strcat("DewPoint",str); 
+  strcat(str,"c");
+  glcd.drawString(0,34,str);
   
   //big bold font
   glcd.setFont(font_helvB14);
