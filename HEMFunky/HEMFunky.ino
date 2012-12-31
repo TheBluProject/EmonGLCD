@@ -3,7 +3,7 @@
 // based on SolarPV template
 // emonGLCD documentation http://openEnergyMonitor.org/emon/emonglcd
 
-// For use with emonTx setup with CT 1 monitoring consumption and Funky sensor with DHT22 Temp/humidity sensor installed.
+// For use with emonTx setup with CT 1 monitoring consumption, additional Dallas temp sensor and Funky remote node with DHT22 Temp/humidity sensor installed.
 
 // Correct time is updated via RaspbPi which gets time from internet, this is used to reset Kwh/d counters at midnight. 
 
@@ -57,7 +57,7 @@ RTC_Millis RTC;
 //---------------------------------------------------
 // Data structures for transfering data between units
 //---------------------------------------------------
-typedef struct { int power1, power2, power3, Vrms; } PayloadTX;         // neat way of packaging data for RF comms
+typedef struct { int power1, power2, power3, Vrms, temp; } PayloadTX;         // neat way of packaging data for RF comms
 PayloadTX emontx;
 
 typedef struct { int temperature; } PayloadGLCD;
@@ -86,8 +86,8 @@ const int switch3=19;
 //---------------------------------------------------
 int hour = 0, minute = 0;
 double usekwh = 0;
-double otemp = 11.7, humi = 82.5, dewpoint = 0;
-double minotemp, maxotemp, minhumi, maxhumi, batt, dpcalc;
+double otemp = 11.7, humi = 82.5, dewpoint = 0, etemp=45; //Dirty hack to avoid minetemp = 0 all the time
+double minotemp, maxotemp, minhumi, maxhumi, minetemp, maxetemp, batt, dpcalc;
 double use_history[7];
 int cval_use;
 byte page = 1;
@@ -126,7 +126,8 @@ void setup()
   temp = (sensors.getTempCByIndex(0));     // get inital temperture reading
   mintemp = temp; maxtemp = temp;          // reset min and max
   minotemp = otemp; maxotemp = otemp;
-  minhumi = humi, maxhumi = humi;
+  minhumi = humi; maxhumi = humi;
+  maxetemp = etemp; minetemp = etemp; 
 
   pinMode(greenLED, OUTPUT); 
   pinMode(redLED, OUTPUT); 
@@ -184,7 +185,7 @@ void loop()
    
     last_switch_state = switch_state;
     switch_state = digitalRead(switch1);  
-    if (!last_switch_state && switch_state) { page += 1; if (page>4) page = 1; }
+    if (!last_switch_state && switch_state) { page += 1; if (page>2) page = 1; }
     
     //Dew point calculation
     dpcalc = (log10(humi)-2.0)/0.4343+(17.62*otemp)/(243.12+otemp);
@@ -197,16 +198,15 @@ void loop()
     }
     else if (page==2)
     {
-      draw_power_page( "POWER" ,cval_use, "USAGE", usekwh);
-      draw_temperature_time_footer(temp, mintemp, maxtemp, hour,minute);
+      draw_dash2_page(cval_use, usekwh, etemp, minetemp, maxetemp, otemp, minotemp, maxotemp, temp, mintemp, maxtemp, hour, minute, batt, last_emontx, last_emonbase);
       glcd.refresh();
     }
-    else if (page==3)
-     {
-     draw_outdoor_page("Outdoor Temperature", otemp, minotemp, maxotemp, "Relative Humidity", humi, minhumi, maxhumi);
-     glcd.refresh();
-     }
-   
+//    else if (page==3)
+//    {
+//      draw_power_page( "POWER" ,cval_use, "USAGE", usekwh);
+//      draw_temperature_time_footer(temp, mintemp, maxtemp, hour,minute);
+//      glcd.refresh();
+//    }
     int LDR = analogRead(LDRpin);                     // Read the LDR Value so we can work out the light level in the room.
     int LDRbacklight = map(LDR, 0, 1023, 50, 250);    // Map the data from the LDR from 0-1023 (Max seen 1000) to var GLCDbrightness min/max
     LDRbacklight = constrain(LDRbacklight, 0, 255);   // Constrain the value to make sure its a PWM value 0-255
@@ -231,13 +231,19 @@ void loop()
     if (temp > maxtemp) maxtemp = temp;
     if (temp < mintemp) mintemp = temp;
     
-//    otemp = emonfunky.temperature / 100;
-//    humi = emonfunky.humidity / 100;
+//    otemp = emonfunky.temperature * 0.01;
+//    humi = emonfunky.humidity * 0.01;
+    
+    etemp = double (emontx.temp * 0.01);
+    
     if (otemp > maxotemp) maxotemp = otemp;
     if (otemp < minotemp) minotemp = otemp;
     
     if (humi > maxhumi) maxhumi = humi;
     if (humi < minhumi) minhumi = humi;
+    
+    if (etemp > maxetemp) maxetemp = etemp;
+    if (etemp < minetemp) minetemp = etemp;
 
    
     emonglcd.temperature = (int) (temp * 100);                          // set emonglcd payload
