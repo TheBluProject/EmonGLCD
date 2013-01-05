@@ -47,6 +47,10 @@ GLCD_ST7565 glcd;
 #include <Wire.h>                   // Part of Arduino libraries - needed for RTClib
 RTC_Millis RTC;
 
+#define RETRY_PERIOD 5    // How soon to retry (*10ms) if ACK didn't come in
+#define RETRY_LIMIT 5     // Maximum number of times to retry
+#define ACK_TIME 10       // Number of milliseconds to wait for an ack
+
 //--------------------------------------------------------------------------------------------
 // RFM12B Settings
 //--------------------------------------------------------------------------------------------
@@ -86,8 +90,8 @@ const int switch3=19;
 //---------------------------------------------------
 int hour = 0, minute = 0;
 double usekwh = 0;
-double otemp = 11.7, humi = 82.5, dewpoint = 0, etemp=45; //Dirty hack to avoid minetemp = 0 all the time
-double minotemp, maxotemp, minhumi, maxhumi, minetemp, maxetemp, batt, dpcalc;
+double otemp, humi, dewpoint = 0, etemp; 
+double minotemp = 99, maxotemp = -99, minhumi = 99, maxhumi = 0, minetemp = 99, maxetemp = 0, batt, dpcalc; //Dirty half-working hack to avoid min[x]temp = 0 all the time (well, until the next ice age, that is ..)
 double use_history[7];
 int cval_use;
 byte page = 1;
@@ -125,9 +129,6 @@ void setup()
   sensors.requestTemperatures();
   temp = (sensors.getTempCByIndex(0));     // get inital temperture reading
   mintemp = temp; maxtemp = temp;          // reset min and max
-  minotemp = otemp; maxotemp = otemp;
-  minhumi = humi; maxhumi = humi;
-  maxetemp = etemp; minetemp = etemp; 
 
   pinMode(greenLED, OUTPUT); 
   pinMode(redLED, OUTPUT); 
@@ -160,7 +161,10 @@ void loop()
       } 
     }
   }
-
+    otemp = double (emonfunky.temperature * 0.01);
+    humi = double (emonfunky.humidity * 0.01);
+    etemp = double (emontx.temp * 0.01);
+    
   //--------------------------------------------------------------------------------------------
   // Display update every 200ms
   //--------------------------------------------------------------------------------------------
@@ -190,7 +194,8 @@ void loop()
     //Dew point calculation
     dpcalc = (log10(humi)-2.0)/0.4343+(17.62*otemp)/(243.12+otemp);
     dewpoint = 243.12*dpcalc/(17.62-dpcalc);
-
+    
+   
     if (page==1)
     {            
       draw_dash_page(cval_use, usekwh, humi, otemp, minotemp, maxotemp, dewpoint, temp, mintemp, maxtemp, hour, minute, batt, last_emontx, last_emonbase);
@@ -230,25 +235,14 @@ void loop()
     if ((rawtemp>-20) && (rawtemp<50)) temp=rawtemp;                  //is temperature withing reasonable limits?
     if (temp > maxtemp) maxtemp = temp;
     if (temp < mintemp) mintemp = temp;
-    
-//    otemp = emonfunky.temperature * 0.01;
-//    humi = emonfunky.humidity * 0.01;
-    
-    etemp = double (emontx.temp * 0.01);
-    
     if (otemp > maxotemp) maxotemp = otemp;
     if (otemp < minotemp) minotemp = otemp;
-    
     if (humi > maxhumi) maxhumi = humi;
     if (humi < minhumi) minhumi = humi;
-    
     if (etemp > maxetemp) maxetemp = etemp;
     if (etemp < minetemp) minetemp = etemp;
-
-   
+       
     emonglcd.temperature = (int) (temp * 100);                          // set emonglcd payload
-    int i = 0; while (!rf12_canSend() && i<10) {rf12_recvDone(); i++;}  // if ready to send + exit loop if it gets stuck as it seems too
-    rf12_sendStart(0, &emonglcd, sizeof emonglcd);                      // send emonglcd data
-    rf12_sendWait(0);    
+    send_rf_data();
   }
 }
